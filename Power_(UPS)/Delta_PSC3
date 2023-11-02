@@ -1,0 +1,158 @@
+zabbix_export:
+  version: '6.4'
+  template_groups:
+    -
+      uuid: 3dcd5bbe90534f9e8eb5c2d53756af63
+      name: Templates/Power
+  templates:
+    -
+      uuid: f6298a58e5724fe19dcaa9c08aabb792
+      template: 'PSC3 Delta'
+      name: 'PSC3 Delta'
+      groups:
+        -
+          name: Templates/Power
+      items:
+        -
+          uuid: 46dd51f782144bb9af2faca97f8bce03
+          name: dcBatteryTemperature
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-SMI::enterprises.20246.2.3.1.1.1.2.3.4.0'
+          key: dcBatteryTemperature
+          history: 30d
+          trends: '0'
+          value_type: FLOAT
+          units: °C
+          preprocessing:
+            -
+              type: JAVASCRIPT
+              parameters:
+                - |
+                  if(value>=2147483647){
+                  value=0;
+                  return value;
+                  }else
+                  return value;
+        -
+          uuid: c247afc3ebba49da897298c9ac3bda3b
+          name: dcLoadCurrent
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-SMI::enterprises.20246.2.3.1.1.1.2.3.2.0'
+          key: dcLoadCurrent
+          delay: 30s
+          history: 30d
+          trends: '0'
+          value_type: FLOAT
+          units: mA
+          preprocessing:
+            -
+              type: MULTIPLIER
+              parameters:
+                - '0.1'
+        -
+          uuid: 6ed944b96ce94cfb82d99d5ea79d5153
+          name: DCSystemPower
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-SMI::enterprises.20246.2.3.1.1.1.2.3.8.0'
+          key: DCSystemPower
+          delay: 30s
+          history: 30d
+          trends: '0'
+          value_type: FLOAT
+          units: W
+        -
+          uuid: a524b21a175b4138b44e84eb94046c3c
+          name: dcSystemVoltage
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-SMI::enterprises.20246.2.3.1.1.1.2.3.1.0'
+          key: dcSystemVoltage
+          delay: 30s
+          history: 30d
+          trends: '0'
+          value_type: FLOAT
+          units: V
+          preprocessing:
+            -
+              type: MULTIPLIER
+              parameters:
+                - '0.01'
+        -
+          uuid: c80f4751fee445599da5e4c67fa15e9a
+          name: 'Falla CA'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-SMI::enterprises.20246.2.3.1.1.1.2.8.2.1.3.6'
+          key: FailCa
+          history: 30d
+          trends: '0'
+        -
+          uuid: ee38beda2ed148c6a1df56ca2a08c2ec
+          name: 'Number Rectifier Failure'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-SMI::enterprises.20246.2.3.1.1.1.2.4.2.0'
+          key: FailureRectifier
+          history: 30d
+          trends: '0'
+        -
+          uuid: 8c43dbf4569641da88c8e1243892f23e
+          name: 'Number Rectifier Operative'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-SMI::enterprises.20246.2.3.1.1.1.2.4.3.0'
+          key: OperRectifier
+          history: 30d
+          trends: '0'
+        -
+          uuid: 93e56c40057647b7b35ec7d8b2501d9a
+          name: 'Rectifier 1'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.20246.2.3.1.1.1.2.4.4.1.3.1
+          key: OperRectifier1
+          history: 30d
+          trends: '0'
+        -
+          uuid: bee65b6049d04350a7e7bc48b06882af
+          name: 'Rectifier 2'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.20246.2.3.1.1.1.2.4.4.1.3.2
+          key: OperRectifier2
+          history: 30d
+          trends: '0'
+        -
+          uuid: 8b1f6f938f3e44adb8ff1347179e15ec
+          name: 'System Name'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-SMI::enterprises.20246.2.3.1.1.1.2.1.1.0'
+          key: SystemName
+          delay: 30m
+          history: 3d
+          trends: '0'
+          value_type: TEXT
+  triggers:
+    -
+      uuid: 1b73843342f54027aa80c5bbe75dbb36
+      expression: 'avg(/PSC3 Delta/dcLoadCurrent,5m)=0 and avg(/PSC3 Delta/DCSystemPower,5m)=0'
+      recovery_mode: RECOVERY_EXPRESSION
+      recovery_expression: 'avg(/PSC3 Delta/dcLoadCurrent,5m)>0 and avg(/PSC3 Delta/DCSystemPower,5m)>0'
+      name: 'Falla CA'
+      event_name: '{HOST.NAME}: Ausencia de energia alterna'
+      priority: DISASTER
+  graphs:
+    -
+      uuid: 75248a987a9a4eb68f61bdbbb79af20a
+      name: 'Load Current'
+      graph_items:
+        -
+          color: FFBF00
+          calc_fnc: ALL
+          item:
+            host: 'PSC3 Delta'
+            key: dcLoadCurrent
+    -
+      uuid: 8123057f9b77405d909f49daf65766e6
+      name: 'System Power'
+      graph_items:
+        -
+          color: FFFF00
+          calc_fnc: ALL
+          item:
+            host: 'PSC3 Delta'
+            key: DCSystemPower
